@@ -1,36 +1,49 @@
-let body = document.body;
-let string = window.location.search;
-let url = 'https://api.github.com/users/wycats';
+let defaultUser = 'wycats';
+let newUser;
+let href = document.location.href;
+const $userAva = document.getElementById('avatar');
+const $userText = document.getElementById('text');
+const $loader = document.getElementById('loader');
+const $userName = document.getElementById('name');
+const $userBio = document.getElementById('bio');
+const $userLink = document.getElementById('link');
+const $date = document.getElementById('date');
 
-fetch(url)
-	.then(res => res.json())
-	.then(json => {
-		console.log(json.avatar_url);
-        console.log(json.name);
-        console.log(json.bio);
-        console.log(json.html_url);
+const generateUrl = function () {
+  let user = href.split('=');
+  if (user[1]) {
+    username = user[1];
+  } else {
+    username = defaultUser
+  };
+  return 'https://api.github.com/users/' + username;
+}
 
-        let photo = new Image();
-        photo.src = json.avatar_url;
-        body.append(photo);
+let apiLink = generateUrl();
 
-        let name = document.createElement('p');
-        if (json.name != null) {
-            name.innerHTML = json.name;
-        } else {
-            name.innerHTML = 'Информация о пользователе недоступна';
-        }
-        body.append(name);
-        name.addEventListener("click", () => window.location = json.html_url);
+let currentDate = new Date();
 
-        let bio = document.createElement('p');
-        if (json.bio != null) {
-            bio.innerHTML = json.bio;
-        } else {
-            bio.innerHTML = 'Информация о пользователе недоступна';
-        }
-        body.append(bio);
+const getDate = new Promise((resolve, reject) => {
+  setTimeout(() => currentDate ? resolve($date.innerHTML = currentDate.toDateString()) : reject('Не удалось получить дату'), 1500);
+})
 
-    })
-    .catch(err => alert('Информация о пользователе недоступна'));
-	;
+const renderCard = function (obj) {
+  $loader.classList.toggle("hidden");
+  $userAva.classList.toggle("hidden");
+  $userText.classList.toggle("hidden");
+  $userAva.src = obj.avatar_url;
+  $userLink.innerHTML = obj.login;
+  $userLink.href = obj.html_url;
+  if (obj.bio != null) {
+    $userBio.innerHTML = obj.bio;
+  } else {
+    $userBio.innerHTML = "This user haven't bio in profile :(";
+  }
+}
+
+Promise.all([getDate])
+    .then(() => fetch(apiLink))
+    .then(res => res.json())
+    .then(obj => newUser = Object.assign({}, obj))
+    .then(newUser => renderCard(newUser))
+    .catch(err => console.error(err));
